@@ -1,8 +1,11 @@
 package com.example.club.config;
 
 import com.example.club.security.filter.ApiCheckFilter;
+import com.example.club.security.filter.ApiLoginFilter;
+import com.example.club.security.handler.ApiLoginFailHandler;
 import com.example.club.security.handler.ClubLoginSuccessHandler;
 import com.example.club.security.service.ClubUserDetailService;
+import com.example.club.security.util.JWTUtil;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -60,6 +63,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         http.addFilterBefore(apiCheckFilter(), UsernamePasswordAuthenticationFilter.class);
         // CSRF 토큰을 사용할 때는 반드시 POST방식으로만 로그아웃을 처리한다.
+
+        http.addFilterBefore(apiLoginFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     @Bean
@@ -69,7 +74,24 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public ApiCheckFilter apiCheckFilter() {
-        return new ApiCheckFilter("/notes/**/*");
+        return new ApiCheckFilter("/notes/**/*", jwtUtil());
     }
 
+    @Bean
+    public ApiLoginFilter apiLoginFilter() throws Exception {
+
+        ApiLoginFilter apiLoginFilter = new ApiLoginFilter("/api/login", jwtUtil());
+        apiLoginFilter.setAuthenticationManager(authenticationManager());
+
+        apiLoginFilter.setAuthenticationFailureHandler(new ApiLoginFailHandler());
+
+        log.info("SecurityConfig Bean LoginFilter");
+
+        return apiLoginFilter;
+    }
+
+    @Bean
+    public JWTUtil jwtUtil() {
+        return new JWTUtil();
+    }
 }
